@@ -1,0 +1,88 @@
+---
+layout: default
+---
+<style>
+  .lf{
+    font-size: 18px;
+  }
+  .post-content{
+    color: #555;
+
+    line-height: 30px;
+  }
+
+  code {
+      padding: .2rem .4rem;
+      font-size: 90%;
+      color: #1f969c;
+      background-color: #e9f3ed;
+      border-radius: .25rem;
+  }
+  hr{
+
+    width: 200px;
+  }
+
+</style>
+<div class="row mt-5">
+<div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+    <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+
+          <header class="post-header">
+            <h1 class="post-title lo" itemprop="name headline">{{ page.title }} </h1>
+            <p class="post-meta"><time datetime="{{ page.date | date_to_xmlschema }}" itemprop="datePublished"> {% if page.type == "p" %}
+            <span style="color:#888"><img src="{{site.baseurl}}/images/i-project-sm.png" width="40"/> </span>
+            {% elsif page.type == "b" %}
+            <span style="color:#888"><img src="{{site.baseurl}}/images/i-blog-sm.png" width="40"/> </span>
+            {% endif %} Priyanshu Singh • {{ page.date | date: "%b %-d, %Y" }}</time>{% if page.author %} •  <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span itemprop="name">{{ page.author }}</span></span>{% endif %}</p>
+
+          </header>
+
+          <div class="post-content lf" itemprop="articleBody">
+            {{ content }}
+          </div>
+
+    </article>
+    <div class="row">
+      {% if site.disqus-shortname %}
+         {% include disqus.html %}
+        {% endif %}
+    </div>
+
+
+    <div class="row">
+
+             {% if page.next.url %}
+                    <div class="col-6 text-left"> <a class="next btn btn-lg btn-outline-success" href="{{page.next.url | prepend: site.baseurl}}"><i class="fa fa-chevron-left" aria-hidden="true"></i> {{page.next.title}}</a></div>
+              {% endif %}
+              {% if page.previous.url %}
+                <div class="col-6 text-right"> <a class="previous btn btn-lg btn-outline-success" href="{{page.previous.url | prepend: site.baseurl}}">{{page.previous.title}} <i class="fa fa-chevron-right" aria-hidden="true"></i></a></div>
+              {% endif %}
+
+    </div>
+</div>
+
+
+
+</div>
+<style>
+  .btn-outline-success{
+    border:none;
+  }
+  a{
+    text-decoration: none !important;
+  }
+
+  </style>
+    <script>
+    (function() {
+        var font3 = document.createElement('link');
+        font3.type = 'text/css';
+        font3.rel = 'stylesheet';
+        font3.href = '{{site.baseurl}}/css/syntax-highlighting.css';
+        var q = document.getElementsByTagName('link')[0];
+        q.parentNode.insertBefore(font3, q);
+      })();
+</script>
+
+{% include fb-script.html %}

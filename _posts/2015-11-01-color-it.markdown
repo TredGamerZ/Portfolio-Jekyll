@@ -1,0 +1,210 @@
+---
+layout: post
+title:  "Color It"
+categories: jekyll update
+img: colorit3.png
+priority: 0
+type: p
+---
+This project was done as a part of course ``Image Analysis`` wherein I developed a tool
+``Color It`` using openCV library and Qt(GUI).
+
+Just by coloring 3-4 percent of the image, we can color the whole image while maintaining the original luminance.\\
+The algorithm works as follows:
+
+1. Convert the image in ``YCbCr`` color space from ``RGB`` color space.
+2. Recolor the small portion of the image and take those color ``Cb,Cr`` and replace the original image's at those pixels.
+3. Propogate those ``Cb``, ``Cr`` component using simple dijkstra algorithm where the weights keep on increasing further away the pixel is from the pixels with fixed ``Cb``, ``Cr``.
+4. Have a bucket of size 3 or 4 for each pixel which will maintain the top 3, 4 colors having minimum weight at those pixels.
+5. Take weighted sum of all the colors in the bucket and set ``CbCr`` of the original image.
+
+You can find the source on my [github repository][colorit-repo].
+
+***
+
+I used only one main class named `ColorBlender`.
+{% highlight c++ %}
+class ColorBlender {
+
+private:
+    const Mat* grayImg;
+    const Mat* layerImg;
+    Vec3b bgColor;
+    Mat* output;
+
+protected:
+    BlendPixel*** pixelArray;
+    queue<BlendPixel *> activeQueue;
+
+    // expand the frontier
+    void propogateColor();                                  
+
+    // color the picture
+    void blendColor(const Mat *original = nullptr);
+
+    // generate the colored set        
+    void generateColoredSet();      
+
+    // pixel modified wrt test pixel
+    bool modifyPixel(BlendPixel &cur, BlendPixel &test);    
+
+    // allocate pixelArray
+    void allocateArray();
+
+    // release pixelArray             		 		
+    void releaseArray();   
+
+    // a simple weight function 			 	
+    inline double weight(double d);
+
+    void assertImage();
+
+public:
+    virtual ~ColorBlender() { }
+
+    ColorBlender() { }
+
+    Mat* colorize(const Mat* _grayImageInRGB, const Mat* _layerImageInRGB);
+    Mat* colorize(const Mat* _grayImageInRGB, const Mat* _layerImageInRGB, const Vec3b backgroundColorInRGB);
+
+};
+{% endhighlight %}
+
+The only public function `colorize` returns the output image. If a background color is provided then whenever in the code that color is encountered, the original `CbCr` is used from the image.
+
+The propogation works as follows:
+{% highlight c++ %}
+void ColorBlender::propogateColor() {
+    int rows = grayImg->rows;
+    int cols = grayImg->cols;
+    while(!activeQueue.empty()){
+        BlendPixel *pixel = activeQueue.front();
+        activeQueue.pop();
+        for (int y = pixel->y - 1; y <= pixel->y + 1; ++y) {
+            for (int x = pixel->x - 1; x <= pixel->x + 1; ++x) {
+                if (x != pixel->x || y != pixel->y) {
+                    if (x >= 0 && x < cols && y >= 0 && y < rows) {
+                        BlendPixel *testPixel = pixelArray[y][x];
+                        if (modifyPixel(*pixel, *testPixel))activeQueue.push(testPixel);
+                    }
+                }
+            }
+        }
+    }
+}
+{% endhighlight %}
+In the starting `activeQueue` contains all the pixel that are colored in the layered image(color by the user). Each time the loop is executed, color is propogated to the neighbors if the propogated color have lesser weight than any of the colors present in the bucket of neighbor.\\
+If the color is propogated then `modifyPixel` returns `true` otherwise `false`.
+The working of `modifyPixel` is as follows:
+{% highlight c++ %}
+bool ColorBlender::modifyPixel(BlendPixel &cur, BlendPixel &test) {
+    double y1 = cur.Y;
+    double y2 = test.Y;
+    double d = abs(y1 - y2);
+    bool result = false;
+
+    for(int i=0; i < MAX_BLEND_COLOR; i++){
+        if(cur.dist[i] < MAX_DISTANCE){
+            int j=0;
+            while(cur.dist[i] + d >= test.dist[j] && j < MAX_BLEND_COLOR){
+                if(cur.cb[i] == test.cb[j] && cur.cr[i] == test.cr[j]){
+                    j=MAX_BLEND_COLOR;
+                    break;
+                }
+                j++;
+            }
+            if(j < MAX_BLEND_COLOR){
+                if(cur.cb[i] != test.cb[j] && cur.cr[i] != test.cr[j]){
+                    for(int k=MAX_BLEND_COLOR-1; k > j; k--){
+                        if(test.cb[k-1]!=cur.cb[i] && test.cr[k-1]!=cur.cr[i]){
+                            test.cb[k] = test.cr[k-1];
+                            test.cr[k] = test.cr[k-1];
+                            test.dist[k] = test.dist[k-1];
+                        }
+                        test.cb[j] = cur.cb[i];
+                        test.cr[j] = cur.cr[i];
+                        test.dist[j] = (float) (cur.dist[i] + d);
+                        result = true;
+                    }
+                }else{
+                    break;
+                }
+            }
+        }
+    }
+    return result;
+}
+{% endhighlight %}
+
+Now what remains is to blend the colors which is the weighted average of all the colors in the bucket.
+{% highlight c++ %}
+void ColorBlender::blendColor(const Mat *original) {
+    int rows = grayImg->rows;
+    int cols = grayImg->cols;
+    Mat colorMat;
+    cvtColor(*grayImg, colorMat, CV_RGB2YCrCb);
+    //cv::imshow("lasjf",colorMat);
+    for(int y=0; y<rows; ++y){
+        for(int x=0; x<cols; ++x){
+            double wsum=0;
+            double Cbsum=0;
+            double Crsum=0;
+
+            BlendPixel pixel = *pixelArray[y][x];
+            for(int k=0; k < MAX_BLEND_COLOR; k++){
+                if(pixel.dist[k] != MAX_DISTANCE){
+                    double wk = weight(pixel.dist[k]);
+                    wsum += wk;
+
+                    if(original != nullptr &&
+                            pixel.cb[k] == bgColor[1] &&
+                            pixel.cr[k] == bgColor[2]){
+
+                        Vec3b origColor = colorMat.at<Vec3b>(y, x);
+                        Cbsum += wk * origColor[1];
+                        Crsum += wk * origColor[2];
+                    }else {
+                        Cbsum += wk * pixel.cb[k];
+                        Crsum += wk * pixel.cr[k];
+                    }
+                }
+            }
+            Vec3b pixelValue = output->at<Vec3b>(y, x);
+            pixelValue[0] = pixel.Y;
+            if(wsum == 0){pixelValue[1] = 0; pixelValue[2] = 0;}
+            else {
+                pixelValue[1] = (uchar) (Cbsum / wsum);
+                pixelValue[2] = (uchar) (Crsum / wsum);
+            }
+
+            output->at<Vec3b>(y, x) = pixelValue;
+        }
+    }
+}
+{% endhighlight %}
+The weight of the color should be inversly propotional to the distance from the source colors. Hence any decreasing function will do the needful. But do keep in mind that if the weight function is behaving like constant then all colors will have same weight and which will result in color bleeding.
+{% highlight c++ %}
+double ColorBlender::weight(double d) {
+    return pow(d+1, -5.0);
+}
+{% endhighlight %}
+After implementing basic UI code, the final result was like this.
+
+---
+
+#### Open any image
+![open any image]({{site.baseurl}}/images/colorit1.png)
+
+---
+
+#### Color It
+![color the image]({{site.baseurl}}/images/colorit2.png)
+
+---
+
+#### Click Colorize
+![Output Image]({{site.baseurl}}/images/colorit3.png)
+
+
+
+[colorit-repo]: https://github.com/PriyanshuSingh/ColorIt

@@ -1,0 +1,13 @@
+---
+layout: post
+title:  "CG Paint"
+date:   2016-06-13 10:51:47 +0530
+categories: jekyll update
+img: image-1.png
+categories: [one, two]
+priority: 2
+type: b
+---
+
+CG Paint is a simple paint program purely written in C++ using OpenGL4.1 and Qt.
+No Qt Paint class were used, all the rendering part was done through OpenGL which required implementation of transformation matrices and use of programmable pipeline to handle the changes.

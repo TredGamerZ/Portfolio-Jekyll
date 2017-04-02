@@ -1,0 +1,57 @@
+<header class="site-header">
+  <style>
+    .navbar-border{
+      border:none !important;
+      border-top: 2px solid #38b485 !important;
+      font-family: 'Raleway',sans-serif;
+
+      font-weight: bolder !important;
+    }
+    .nav-link{
+      font-weight: bold;
+      color:#333 !important;
+      transition: all;
+      transition-duration: 400ms;
+    }
+    .nav-link:hover{
+      /*border-bottom: 3px solid #38b485 !important;*/
+      color: #38b485 !important;
+    }
+    .nav-item{
+      display: inline-block;
+    }
+  </style>
+
+  <nav class="navbar navbar-toggleable-md navbar-border navbar-light bg-faded" style="background-color:white">
+    <!-- <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button> -->
+    <div class="container mt-4">
+
+        <div class="col-lg-6 col-md-12 justify-content-center">
+          <a class="navbar-brand" href="/">  <img class="img-responsive" width="300" src="{{site.baseurl}}/images/logo-01-01.png"/></a>
+
+        </div>
+        <div class="col-lg-6 col-md-12 col-xs-12 ">
+
+          <ul class=" pt-4 justify-content-center" >
+            <li class="nav-item mr-2">
+              <h5><a class="nav-link"href="{{site.baseurl}}/"> About <span class="sr-only">(current)</span></a></h5>
+            </li>
+            <li class="nav-item active mr-2">
+              <h5><a class="nav-link"href="{{site.baseurl}}/blog/"> Projects <span class="sr-only">(current)</span></a></h5>
+            </li>
+            <li class="nav-item mr-2">
+              <h5><a class="nav-link" href="{{site.baseurl}}/contact/">Contact</a></h5>
+            </li>
+
+
+          </ul>
+        </div>
+
+      </div>
+
+
+  </nav>
+
+</header>
